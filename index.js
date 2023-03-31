@@ -1,7 +1,18 @@
 import { ApolloServer } from "apollo-server"
+import {data} from "./data.js"
+
+const {users, photos, tags} = data
 
 // type defenition
 const typeDefs = `
+type User {
+	githubLogin: ID!
+	name: String
+	avator: String
+	postedPhotos: [Photo!]!
+	inPhotos: [Photo!]!
+}
+
 enum PhotoCategory {
 	SELFIE
 	PORTRAIT
@@ -16,6 +27,8 @@ type Photo {
 	name: String!
 	description: String
 	category: PhotoCategory!
+	postedBy: User!
+	taggedUsers: [User!]!
 }
 
 input PostPhotoInput {
@@ -41,16 +54,15 @@ const closure = () => {
 	}
 }
 const getId = closure()
-const photos = []
 
 // query resolvers
 const resolvers = {
 	Query: {
 		totalPhotos: () => photos.length,
+		allPhotos: () => photos,
 	},
 	Mutation: {
 		postPhoto(parent, args) {
-			console.log("args:",args);
 			const newPhoto = { id: getId(), ...args.input }
 			photos.push(newPhoto)
 
@@ -60,7 +72,19 @@ const resolvers = {
 	// trivial resolver
 	Photo: {
 		url: parent => `http://example.com/img/${parent.id}.jpeg`,
-		name: () => "💩"
+		name: () => "💩",
+		postedBy: parent => {
+			return users.find(u => u.githubLogin === parent.githubUser)
+		},
+		taggedUsers: parent => tags.filter(t => t.photoId === parent.id)
+		.map(t => users.find(u => u.githubLogin === t.userId))
+	},
+	User: {
+		postedPhotos: parent => {
+			return photos.filter(p => p.githubUser === parent.githubLogin)
+		},
+		inPhotos: parent => tags.filter(t => t.userId === parent.id)
+		.map(t => photos.filter(p => p.id === t.photoId))
 	}
 }
 
