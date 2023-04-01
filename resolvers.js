@@ -40,15 +40,25 @@ const githubAuth = async (parent, { code }, { db }) => {
 // query resolvers
 export const resolvers = {
 	Query: {
+		me: (parent, args, { currentUser }) => currentUser,
 		totalPhotos: (parent, args, { db }) => db.collection("photos").estimateDocumentCount(),
 		allPhotos: (parent, args, { db }) => db.collection("photos").find().toArray(),
 		totalUsers: (parent, args, { db }) => db.collection("users").estimateDocumentCount(),
 		allUsers: (parent, args, { db }) => db.collection("users").find().toArray(),
 	},
 	Mutation: {
-		postPhoto: (parent, args) => {
-			const newPhoto = { id: getId(), ...args.input, created: new Date() }
-			photos.push(newPhoto)
+		postPhoto: async (parent, args, { db, currentUser }) => {
+			if (!currentUser) {
+				throw new Error("only an authorized user can post a photo")
+			}
+			const newPhoto = {
+				...args.input,
+				userID: currentUser.githubLogin,
+				created: new Date()
+			}
+
+			const { _id } = await db.collection("photos").insertOne(newPhoto)
+			newPhoto.id = _id
 
 			return newPhoto
 		},
@@ -56,9 +66,10 @@ export const resolvers = {
 	},
 	// trivial resolver
 	Photo: {
-		url: parent => `http://example.com/img/${parent.id}.jpeg`,
-		postedBy: parent => {
-			return users.find(u => u.githubLogin === parent.githubUser)
+		id: parent => parent.id || parent._id,
+		url: parent => `/img/photos/${parent.id}.jpeg`,
+		postedBy: async (parent, args, { db }) => {
+			return await db.collection("users").findOne({ githubLogin: parent.userID })
 		},
 		taggedUsers: parent => tags.filter(t => t.photoId === parent.id)
 			.map(t => users.find(u => u.githubLogin === t.userId)),
