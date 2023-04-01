@@ -34,17 +34,32 @@ const githubAuth = async (parent, { code }, { db }) => {
 	// 3. update records
 	await db.collection("users").replaceOne({ githublogin: login }, userInfo, { upsert: true })
 
-	return { user: userInfo, token: access_token }
+	return {
+		token: access_token,
+		user: userInfo,
+	}
+}
+
+const fakeUserAuth = async (parent, { githubLogin }, { db }) => {
+	const user = await db.collection("users").findOne({ githubLogin })
+	if (!user) {
+		throw new Error(`Cannot find user with githubLogin ${githubLogin}`)
+	}
+
+	return {
+		token: user.githubToken,
+		user
+	}
 }
 
 // query resolvers
 export const resolvers = {
 	Query: {
 		me: (parent, args, { currentUser }) => currentUser,
-		totalPhotos: (parent, args, { db }) => db.collection("photos").estimateDocumentCount(),
-		allPhotos: (parent, args, { db }) => db.collection("photos").find().toArray(),
-		totalUsers: (parent, args, { db }) => db.collection("users").estimateDocumentCount(),
-		allUsers: (parent, args, { db }) => db.collection("users").find().toArray(),
+		totalPhotos: async (parent, args, { db }) => await db.collection("photos").count(),
+		allPhotos: async (parent, args, { db }) => await db.collection("photos").find().toArray(),
+		totalUsers: async (parent, args, { db }) => await db.collection("users").count(),
+		allUsers: async (parent, args, { db }) => await db.collection("users").find().toArray(),
 	},
 	Mutation: {
 		postPhoto: async (parent, args, { db, currentUser }) => {
@@ -63,6 +78,21 @@ export const resolvers = {
 			return newPhoto
 		},
 		githubAuth,
+		fakeUserAuth,
+		addFakeUsers: async (parent, { count }, { db }) => {
+			const res = await fetch(`https://randomuser.me/api/?results=${count}`)
+
+			const { results } = await res.json()
+			const users = results.map(d => ({
+				githubLogin: d.login.username,
+				name: `${d.name.first} ${d.name.last}`,
+				avator: d.picture.thumbnail,
+				githubToken: d.login.sha1
+			}))
+			await db.collection("users").insertMany(users)
+
+			return users
+		}
 	},
 	// trivial resolver
 	Photo: {
