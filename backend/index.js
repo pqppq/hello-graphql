@@ -12,12 +12,11 @@ const typeDefs = readFileSync("../typeDefs.graphql", "UTF-8")
 const start = async () => {
 	const app = express()
 	app.get("/", (req, res) => res.end("Welcom to the PhotoShare API"))
-	app.get("/playground", expressPlayground.default({ endpoint: "/grpahql" }))
+	app.get("/playground", expressPlayground.default({ endpoint: "/graphql" }))
 
 	const MONGO_DB_URI = process.env.DB_URI
 	const client = await MongoClient.connect(MONGO_DB_URI)
 	const db = client.db()
-	const context = { db }
 
 	const server = new ApolloServer({
 		typeDefs,
