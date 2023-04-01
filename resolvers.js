@@ -1,4 +1,5 @@
 import { data } from "./data.js"
+import {GraphQLScalarType} from "graphql"
 
 const { users, photos, tags } = data
 
