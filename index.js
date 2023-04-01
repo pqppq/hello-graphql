@@ -3,27 +3,36 @@ import expressPlayground from "graphql-playground-middleware-express"
 import express from "express"
 import { readFileSync } from "fs"
 import { resolvers } from "./resolvers.js"
+import { MongoClient } from "mongodb"
+import * as dotenv from "dotenv"
 
+dotenv.config()
 const typeDefs = readFileSync("./typeDefs.graphql", "UTF-8")
 
-const app = express()
-app.get("/", (req, res) => res.end("Welcom to the PhotoShare API"))
-app.get("/playground", expressPlayground.default({ endpoint: "/grpahql" }))
+const start = async () => {
+	const app = express()
+	app.get("/", (req, res) => res.end("Welcom to the PhotoShare API"))
+	app.get("/playground", expressPlayground.default({ endpoint: "/grpahql" }))
 
-const start = async (app) => {
+	const MONGO_DB_URI = process.env.DB_URI
+	const client = await MongoClient.connect(MONGO_DB_URI)
+	const db = client.db()
+	const context = { db }
+
 	const server = new ApolloServer({
 		typeDefs,
 		resolvers,
+		context,
 	})
 	await server.start()
 	server.applyMiddleware({ app })
 
+	// start server
+	app.listen({ port: 4000 }, () => {
+		console.log(`GraphQL service running @ localhost:4000${server.graphqlPath}`)
+	})
+
 	return server
 }
 
-const server = await start(app)
-
-// start server
-app.listen({ port: 4000 }, () => {
-	console.log(`GraphQL service runnion @ localhost:4000${server.graphqlPath}`)
-})
+await start()

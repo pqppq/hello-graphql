@@ -1,5 +1,10 @@
+import { authorizeWithGithub } from "./auth.js"
 import { data } from "./data.js"
-import {GraphQLScalarType} from "graphql"
+import { GraphQLScalarType } from "graphql"
+import * as dotenv from "dotenv"
+
+dotenv.config()
+const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env
 
 const { users, photos, tags } = data
 
@@ -11,19 +16,43 @@ const closure = () => {
 }
 const getId = closure()
 
+const githubAuth = async (parent, { code }, { db }) => {
+	// 1. get data from github
+	const { message, access_token, avatar_url, login, name } = await authorizeWithGithub({
+		client_id: GITHUB_CLIENT_ID,
+		client_secret: GITHUB_CLIENT_SECRET,
+		code
+	})
+
+	// 2. if message exists, some error has happened
+	if (message) {
+		throw new Error(message)
+	}
+
+	const userInfo = { name, githubLogin: login, githubToken: access_token, avator: avatar_url }
+
+	// 3. update records
+	await db.collection("users").replaceOne({ githublogin: login }, userInfo, { upsert: true })
+
+	return { user: userInfo, token: access_token }
+}
+
 // query resolvers
 export const resolvers = {
 	Query: {
-		totalPhotos: () => photos.length,
-		allPhotos: (parent, args) => photos,
+		totalPhotos: (parent, args, { db }) => db.collection("photos").estimateDocumentCount(),
+		allPhotos: (parent, args, { db }) => db.collection("photos").find().toArray(),
+		totalUsers: (parent, args, { db }) => db.collection("users").estimateDocumentCount(),
+		allUsers: (parent, args, { db }) => db.collection("users").find().toArray(),
 	},
 	Mutation: {
-		postPhoto(parent, args) {
+		postPhoto: (parent, args) => {
 			const newPhoto = { id: getId(), ...args.input, created: new Date() }
 			photos.push(newPhoto)
 
 			return newPhoto
-		}
+		},
+		githubAuth,
 	},
 	// trivial resolver
 	Photo: {
