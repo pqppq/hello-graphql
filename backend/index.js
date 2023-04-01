@@ -7,7 +7,7 @@ import { MongoClient } from "mongodb"
 import * as dotenv from "dotenv"
 
 dotenv.config()
-const typeDefs = readFileSync("./typeDefs.graphql", "UTF-8")
+const typeDefs = readFileSync("../typeDefs.graphql", "UTF-8")
 
 const start = async () => {
 	const app = express()
