@@ -8,14 +8,6 @@ const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env
 
 const { users, photos, tags } = data
 
-const closure = () => {
-	let id = 0
-	return () => {
-		return id++
-	}
-}
-const getId = closure()
-
 const githubAuth = async (parent, { code }, { db }) => {
 	// 1. get data from github
 	const { message, access_token, avatar_url, login, name } = await authorizeWithGithub({
