@@ -2,7 +2,7 @@ import type { User } from "../graphql/graphql"
 import {AddFakeUser} from "./AddFakeUser"
 import { UserListItem } from "./UserListItem"
 
-export const UsreList = ({ count, users }: { count: number, users: User[] }) => {
+export const UserList = ({ count, users }: { count: number, users: User[] }) => {
 	return (
 		<div >
 			<p >{count} users</p>
