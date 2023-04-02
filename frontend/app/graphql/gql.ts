@@ -13,7 +13,8 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
-    "\n query count {\n\ttotalUsers\n\ttotalPhotos\n}\n": types.CountDocument,
+    "\n\tmutation addFakeUsers($count:Int!) {\n\t\taddFakeUsers(count:$count) {\n\t\t\tgithubLogin\n\t\t\tname\n\t\t\tavator\n\t\t}\n\t}\n": types.AddFakeUsersDocument,
+    "\n query allUsers {\n\ttotalUsers\n\tallUsers {\n\t\tgithubLogin\n\t\tname\n\t\tavator\n\t}\n}\n": types.AllUsersDocument,
 };
 
 /**
@@ -33,7 +34,11 @@ export function graphql(source: string): unknown;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n query count {\n\ttotalUsers\n\ttotalPhotos\n}\n"): (typeof documents)["\n query count {\n\ttotalUsers\n\ttotalPhotos\n}\n"];
+export function graphql(source: "\n\tmutation addFakeUsers($count:Int!) {\n\t\taddFakeUsers(count:$count) {\n\t\t\tgithubLogin\n\t\t\tname\n\t\t\tavator\n\t\t}\n\t}\n"): (typeof documents)["\n\tmutation addFakeUsers($count:Int!) {\n\t\taddFakeUsers(count:$count) {\n\t\t\tgithubLogin\n\t\t\tname\n\t\t\tavator\n\t\t}\n\t}\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n query allUsers {\n\ttotalUsers\n\tallUsers {\n\t\tgithubLogin\n\t\tname\n\t\tavator\n\t}\n}\n"): (typeof documents)["\n query allUsers {\n\ttotalUsers\n\tallUsers {\n\t\tgithubLogin\n\t\tname\n\t\tavator\n\t}\n}\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};
